@@ -17,6 +17,8 @@ package sokeriaaa.room2sqldelight.processor
 import com.google.devtools.ksp.symbol.KSAnnotation
 import com.google.devtools.ksp.symbol.KSClassDeclaration
 import com.google.devtools.ksp.symbol.KSPropertyDeclaration
+import sokeriaaa.room2sqldelight.helper.getAnnotationOrNull
+import sokeriaaa.room2sqldelight.helper.getArgumentValueOrNull
 import sokeriaaa.room2sqldelight.model.ColumnModel
 import sokeriaaa.room2sqldelight.model.EntityModel
 import sokeriaaa.room2sqldelight.model.IndexModel
@@ -26,15 +28,8 @@ import javax.lang.model.element.AnnotationValue
 object ModelExtractor {
 
     fun extract(clazz: KSClassDeclaration): EntityModel {
-        val entity = clazz.annotations
-            .firstOrNull {
-                it.annotationType.resolve().declaration.qualifiedName?.asString() ==
-                        "androidx.room.Entity"
-            }
-        val tableName = entity?.arguments?.firstOrNull { arg ->
-            arg.name?.asString() == "tableName"
-        }?.value as? String
-            ?: clazz.simpleName.asString()
+        val entity = clazz.getAnnotationOrNull(qualifiedName = "androidx.room.Entity")
+        val tableName = entity?.getArgumentValueOrNull("tableName") ?: clazz.simpleName.asString()
 
         val columns = clazz.getAllProperties()
             .map { extractColumn(it) }
@@ -52,28 +47,14 @@ object ModelExtractor {
     }
 
     private fun extractColumn(prop: KSPropertyDeclaration): ColumnModel {
-        val columnInfo = prop.annotations
-            .firstOrNull {
-                it.annotationType.resolve().declaration.qualifiedName?.asString() ==
-                        "androidx.room.ColumnInfo"
-            }
-
-        val name = columnInfo?.arguments
-            ?.firstOrNull { it.name?.asString() == "name" }
-            ?.value as? String
-            ?: prop.simpleName.asString()
+        val columnInfo = prop.getAnnotationOrNull(qualifiedName = "androidx.room.ColumnInfo")
+        val name = columnInfo?.getArgumentValueOrNull("name") ?: prop.simpleName.asString()
 
         val nullable = prop.type.resolve().isMarkedNullable
         val sqlType = TypeMapper.map(prop.type.resolve())
 
-        val primaryKey = prop.annotations
-            .firstOrNull {
-                it.annotationType.resolve().declaration.qualifiedName?.asString() ==
-                        "androidx.room.PrimaryKey"
-            }
-        val auto = primaryKey?.arguments
-            ?.firstOrNull { it.name?.asString() == "autoGenerate" }
-            ?.value as? Boolean == true
+        val primaryKey = prop.getAnnotationOrNull(qualifiedName = "androidx.room.PrimaryKey")
+        val auto = primaryKey?.getArgumentValueOrNull("autoGenerate") ?: false
 
         return ColumnModel(
             name = name,
@@ -84,16 +65,9 @@ object ModelExtractor {
     }
 
     fun extractPrimaryKey(clazz: KSClassDeclaration): PrimaryKeyModel? {
-        val entityAnno = clazz.annotations.firstOrNull {
-            it.shortName.asString() == "Entity" &&
-                    it.annotationType.resolve().declaration
-                        .qualifiedName?.asString() == "androidx.room.Entity"
-        }
+        val entityAnno = clazz.getAnnotationOrNull(qualifiedName = "androidx.room.Entity")
 
-        val entityPrimaryKeys = entityAnno
-            ?.arguments
-            ?.firstOrNull { it.name?.asString() == "primaryKeys" }
-            ?.value as? List<*>
+        val entityPrimaryKeys = entityAnno?.getArgumentValueOrNull<List<*>>("primaryKeys")
 
         if (!entityPrimaryKeys.isNullOrEmpty()) {
             val columns = entityPrimaryKeys.mapNotNull { it as? String }
@@ -104,15 +78,10 @@ object ModelExtractor {
         }
 
         val pkProps = clazz.getAllProperties().mapNotNull { prop ->
-            val pkAnno = prop.annotations.firstOrNull {
-                it.shortName.asString() == "PrimaryKey" &&
-                        it.annotationType.resolve().declaration
-                            .qualifiedName?.asString() == "androidx.room.PrimaryKey"
-            } ?: return@mapNotNull null
+            val pkAnno = prop.getAnnotationOrNull(qualifiedName = "androidx.room.PrimaryKey")
+                ?: return@mapNotNull null
 
-            val autoGenerate = pkAnno.arguments
-                .firstOrNull { it.name?.asString() == "autoGenerate" }
-                ?.value as? Boolean ?: false
+            val autoGenerate = pkAnno.getArgumentValueOrNull("autoGenerate") ?: false
 
             prop to autoGenerate
         }.toList()
@@ -126,34 +95,18 @@ object ModelExtractor {
     }
 
     fun extractIndices(clazz: KSClassDeclaration): List<IndexModel> {
-        val entityAnno = clazz.annotations.firstOrNull {
-            it.shortName.asString() == "Entity" &&
-                    it.annotationType.resolve().declaration
-                        .qualifiedName?.asString() == "androidx.room.Entity"
-        } ?: return emptyList()
-
-        val indicesArg = entityAnno.arguments
-            .firstOrNull { it.name?.asString() == "indices" }
-            ?.value as? List<*>
+        val entityAnno = clazz.getAnnotationOrNull(qualifiedName = "androidx.room.Entity")
             ?: return emptyList()
+
+        val indicesArg = entityAnno.getArgumentValueOrNull<List<*>>("indices") ?: return emptyList()
 
         return indicesArg.mapNotNull { value ->
             val anno = (value as? AnnotationValue)?.value as? KSAnnotation
                 ?: return@mapNotNull null
 
-            val columns = (anno.arguments
-                .firstOrNull { it.name?.asString() == "value" }
-                ?.value as? List<*>)
-                ?: emptyList<Any>()
-
-            val unique = (anno.arguments
-                .firstOrNull { it.name?.asString() == "unique" }
-                ?.value as? Boolean) ?: false
-
-            val name = (anno.arguments
-                .firstOrNull { it.name?.asString() == "name" }
-                ?.value as? String)
-                ?.takeIf { it.isNotBlank() }
+            val columns = anno.getArgumentValueOrNull("value") ?: emptyList<Any>()
+            val unique = anno.getArgumentValueOrNull("unique") ?: false
+            val name = anno.getArgumentValueOrNull<String>("name")?.takeIf { it.isNotBlank() }
 
             IndexModel(
                 name = name,
