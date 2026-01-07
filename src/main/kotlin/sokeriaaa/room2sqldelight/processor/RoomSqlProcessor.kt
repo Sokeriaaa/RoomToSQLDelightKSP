@@ -30,7 +30,7 @@ class RoomSqlProcessor(
             .filterIsInstance<KSClassDeclaration>()
 
         entities.forEach { entity ->
-            val model = ModelExtractor.extract(entity)
+            val model = ModelExtractor.extractEntityModel(entity)
             val sql = SqlGenerator.generate(model)
             OutputWriter.write(entity, sql, environment)
         }

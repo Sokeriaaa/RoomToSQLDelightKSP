@@ -14,8 +14,8 @@
  */
 package sokeriaaa.room2sqldelight.processor
 
-import sokeriaaa.room2sqldelight.model.EntityModel
-import sokeriaaa.room2sqldelight.model.IndexModel
+import sokeriaaa.room2sqldelight.model.table.EntityModel
+import sokeriaaa.room2sqldelight.model.table.IndexModel
 
 object SqlGenerator {
 

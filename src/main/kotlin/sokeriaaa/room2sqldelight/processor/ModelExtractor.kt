@@ -19,14 +19,14 @@ import com.google.devtools.ksp.symbol.KSClassDeclaration
 import com.google.devtools.ksp.symbol.KSPropertyDeclaration
 import sokeriaaa.room2sqldelight.helper.getAnnotationOrNull
 import sokeriaaa.room2sqldelight.helper.getArgumentValueOrNull
-import sokeriaaa.room2sqldelight.model.ColumnModel
-import sokeriaaa.room2sqldelight.model.EntityModel
-import sokeriaaa.room2sqldelight.model.IndexModel
-import sokeriaaa.room2sqldelight.model.PrimaryKeyModel
+import sokeriaaa.room2sqldelight.model.table.ColumnModel
+import sokeriaaa.room2sqldelight.model.table.EntityModel
+import sokeriaaa.room2sqldelight.model.table.IndexModel
+import sokeriaaa.room2sqldelight.model.table.PrimaryKeyModel
 
 object ModelExtractor {
 
-    fun extract(clazz: KSClassDeclaration): EntityModel {
+    fun extractEntityModel(clazz: KSClassDeclaration): EntityModel {
         val entity = clazz.getAnnotationOrNull(qualifiedName = "androidx.room.Entity")
         val tableName = entity?.getArgumentValueOrNull("tableName") ?: clazz.simpleName.asString()
 
@@ -113,6 +113,4 @@ object ModelExtractor {
             )
         }
     }
-
-
 }

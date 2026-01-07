@@ -12,7 +12,7 @@
  * You should have received a copy of the GNU Affero General Public License along with this program.
  * If not, see <https://www.gnu.org/licenses/>.
  */
-package sokeriaaa.room2sqldelight.model
+package sokeriaaa.room2sqldelight.model.table
 
 data class EntityModel(
     val tableName: String,

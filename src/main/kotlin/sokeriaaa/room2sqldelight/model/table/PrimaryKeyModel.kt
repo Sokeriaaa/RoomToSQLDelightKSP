@@ -12,11 +12,9 @@
  * You should have received a copy of the GNU Affero General Public License along with this program.
  * If not, see <https://www.gnu.org/licenses/>.
  */
-package sokeriaaa.room2sqldelight.model
+package sokeriaaa.room2sqldelight.model.table
 
-data class ColumnModel(
-    val name: String,
-    val sqlType: String,
-    val nullable: Boolean,
-    val autoIncrement: Boolean
+data class PrimaryKeyModel(
+    val columns: List<String>,
+    val autoGenerate: Boolean
 )
