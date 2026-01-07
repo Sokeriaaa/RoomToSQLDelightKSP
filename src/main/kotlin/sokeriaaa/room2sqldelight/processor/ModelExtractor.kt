@@ -16,9 +16,12 @@ package sokeriaaa.room2sqldelight.processor
 
 import com.google.devtools.ksp.symbol.KSAnnotation
 import com.google.devtools.ksp.symbol.KSClassDeclaration
+import com.google.devtools.ksp.symbol.KSFunctionDeclaration
 import com.google.devtools.ksp.symbol.KSPropertyDeclaration
+import com.google.devtools.ksp.symbol.KSType
 import sokeriaaa.room2sqldelight.helper.getAnnotationOrNull
 import sokeriaaa.room2sqldelight.helper.getArgumentValueOrNull
+import sokeriaaa.room2sqldelight.model.dao.SqlStatement
 import sokeriaaa.room2sqldelight.model.table.ColumnModel
 import sokeriaaa.room2sqldelight.model.table.EntityModel
 import sokeriaaa.room2sqldelight.model.table.IndexModel
@@ -43,6 +46,13 @@ object ModelExtractor {
             primaryKey = primaryKey,
             indices = indices
         )
+    }
+
+    fun extractDao(clazz: KSClassDeclaration): List<SqlStatement> {
+        return clazz.getAllFunctions()
+            .map { extractSqlStatement(it) }
+            .filterNotNull()
+            .toList()
     }
 
     private fun extractColumn(prop: KSPropertyDeclaration): ColumnModel {
@@ -113,4 +123,96 @@ object ModelExtractor {
             )
         }
     }
+
+    fun extractSqlStatement(func: KSFunctionDeclaration): SqlStatement? {
+        val name = func.simpleName.asString()
+
+        func.annotations.forEach { anno ->
+            val fqName = anno.annotationType.resolve()
+                .declaration.qualifiedName?.asString()
+
+            when (fqName) {
+                "androidx.room.Query" -> {
+                    val sql = anno.arguments
+                        .first { it.name?.asString() == "value" }
+                        .value as String
+
+                    return SqlStatement.Query(name, normalizeSql(func, sql))
+                }
+
+                "androidx.room.Insert" -> {
+                    return buildInsert(func, name, anno)
+                }
+
+                // TODO Support
+//                "androidx.room.Delete" -> {
+//                    return buildDelete(func, name)
+//                }
+//
+//                "androidx.room.Update" -> {
+//                    return buildUpdate(func, name)
+//                }
+//
+//                "androidx.room.Upsert" -> {
+//                    return buildUpsert(func, name)
+//                }
+            }
+        }
+        return null
+    }
+
+    fun normalizeSql(func: KSFunctionDeclaration, sql: String): String =
+        sql.replace("`", "")
+            .replace(Regex(":([A-Za-z_][A-Za-z0-9_]*)"), "?")
+            .trim()
+            .removeSuffix(";")
+
+    fun buildInsert(
+        func: KSFunctionDeclaration,
+        name: String,
+        anno: KSAnnotation
+    ): SqlStatement.Insert {
+        val entityType = func.parameters.first().type.resolve()
+        val entityDecl = entityType.unwrapEntity()
+        val entity = extractEntityModel(entityDecl)
+        val replace = anno.arguments
+            .firstOrNull { it.name?.asString() == "onConflict" }
+            ?.value?.toString() == "REPLACE"
+
+        return SqlStatement.Insert(
+            name = name,
+            table = entity.tableName,
+            columns = entity.columns.map { it.name },
+            replace = replace
+        )
+    }
+
+    fun KSType.unwrapEntity(): KSClassDeclaration {
+        val decl = declaration
+
+        // List<T>, MutableList<T>, etc.
+        if (decl.qualifiedName?.asString() in listOf(
+                "kotlin.collections.List",
+                "kotlin.collections.MutableList"
+            )
+        ) {
+            val argType = arguments.first().type!!.resolve()
+            return argType.unwrapEntity()
+        }
+
+        // Array<T>
+        if (decl.qualifiedName?.asString() == "kotlin.Array") {
+            val argType = arguments.first().type!!.resolve()
+            return argType.unwrapEntity()
+        }
+
+        // Entity class
+        if (decl is KSClassDeclaration) {
+            return decl
+        }
+
+        error("Unsupported @Insert parameter type: $decl")
+    }
+
+
 }

@@ -35,6 +35,16 @@ class RoomSqlProcessor(
             OutputWriter.write(entity, sql, environment)
         }
 
+        val daoList = resolver
+            .getSymbolsWithAnnotation("androidx.room.Dao")
+            .filterIsInstance<KSClassDeclaration>()
+
+        daoList.forEach { dao ->
+            val model = ModelExtractor.extractDao(dao)
+            val sql = SqlGenerator.generate(model)
+            OutputWriter.write(dao, sql, environment)
+        }
+
         return emptyList()
     }
 }

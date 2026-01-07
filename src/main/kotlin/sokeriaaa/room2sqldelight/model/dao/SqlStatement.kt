@@ -44,3 +44,33 @@ sealed class SqlStatement {
         val sql: String
     ) : SqlStatement()
 }
+
+fun SqlStatement.toSql(): String = when (this) {
+    is SqlStatement.Query ->
+        "$name:\n$sql;"
+
+    is SqlStatement.Insert -> buildString {
+        append("$name:\n")
+        append("INSERT ")
+        if (replace) append("OR REPLACE ")
+        append("INTO $table(\n")
+        append(columns.joinToString(",\n  ", prefix = "  "))
+        append("\n) VALUES (")
+        repeat(columns.size) { i ->
+            if (i > 0) {
+                append(", ")
+            }
+            append("?")
+        }
+        append(");")
+    }
+
+    is SqlStatement.Delete ->
+        "$name:\n$sql;"
+
+    is SqlStatement.Update ->
+        "$name:\n$sql;"
+
+    is SqlStatement.Upsert ->
+        "$name:\n$sql;"
+}

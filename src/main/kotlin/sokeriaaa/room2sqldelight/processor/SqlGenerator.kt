@@ -14,6 +14,8 @@
  */
 package sokeriaaa.room2sqldelight.processor
 
+import sokeriaaa.room2sqldelight.model.dao.SqlStatement
+import sokeriaaa.room2sqldelight.model.dao.toSql
 import sokeriaaa.room2sqldelight.model.table.EntityModel
 import sokeriaaa.room2sqldelight.model.table.IndexModel
 
@@ -47,6 +49,15 @@ object SqlGenerator {
         }
 
         return sb.toString()
+    }
+
+    fun generate(statements: List<SqlStatement>): String {
+        return buildString {
+            statements.forEach {
+                append(it.toSql())
+                append("\n\n")
+            }
+        }
     }
 
     private fun generateIndex(table: String, index: IndexModel): String {
