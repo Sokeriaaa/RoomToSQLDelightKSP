@@ -23,7 +23,6 @@ import sokeriaaa.room2sqldelight.model.ColumnModel
 import sokeriaaa.room2sqldelight.model.EntityModel
 import sokeriaaa.room2sqldelight.model.IndexModel
 import sokeriaaa.room2sqldelight.model.PrimaryKeyModel
-import javax.lang.model.element.AnnotationValue
 
 object ModelExtractor {
 
@@ -101,8 +100,7 @@ object ModelExtractor {
         val indicesArg = entityAnno.getArgumentValueOrNull<List<*>>("indices") ?: return emptyList()
 
         return indicesArg.mapNotNull { value ->
-            val anno = (value as? AnnotationValue)?.value as? KSAnnotation
-                ?: return@mapNotNull null
+            val anno = value as? KSAnnotation ?: return@mapNotNull null
 
             val columns = anno.getArgumentValueOrNull("value") ?: emptyList<Any>()
             val unique = anno.getArgumentValueOrNull("unique") ?: false

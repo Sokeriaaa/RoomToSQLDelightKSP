@@ -53,7 +53,7 @@ object SqlGenerator {
         val name = index.name ?: "idx_${table}_${index.columns.joinToString("_")}"
         val unique = if (index.unique) "UNIQUE " else ""
 
-        return "CREATE ${unique}INDEX $name ON $table (${index.columns.joinToString(", ")});"
+        return "CREATE ${unique}INDEX $name ON $table(${index.columns.joinToString(", ")});"
     }
 
 }
