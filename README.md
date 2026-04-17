@@ -3,6 +3,10 @@ This is an experimental project for generating [SQLDelight](https://github.com/s
 
 The project is introduced when I am developing [*return 0;*](https://github.com/Sokeriaaa/Return0) — an RPG game powered by Compose Multiplatform. Both Room and SQLDelight are used to implement the database for this game, with SQLDelight for the JS, Room for the non-JS platforms. I reused the data classes and Dao interfaces in commonMain and implemented them manually in the webMain. To improve efficiency, this project was born.
 
+## Deprecated
+
+AndroidX Room 3.0 now supports the web platforms, so this project will no longer receive updates. I'm going to migrate to the Room 3.0 for my multiplatform projects.
+
 ## What does this project do
 
 Currently, this project can generate *.sq files based on annotations from Room.
